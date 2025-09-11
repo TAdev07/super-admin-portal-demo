@@ -1,0 +1,32 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Initialize NestJS Backend API",
+			"type": "shell",
+			"command": "npm i -g @nestjs/cli && nest new super-admin-api && cd super-admin-api && npm install @nestjs/typeorm typeorm pg @nestjs/config && npm install @nestjs/jwt passport passport-jwt bcrypt && npm install --save-dev @types/passport-jwt @types/bcrypt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Initialize Next.js Frontend",
+			"type": "shell",
+			"command": "npx create-next-app@latest super-admin-frontend && cd super-admin-frontend && npm install antd axios",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Initialize MiniPortal Demo",
+			"type": "shell",
+			"command": "npm create vite@latest mini-portal-demo -- --template react-ts && cd mini-portal-demo && npm install",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
