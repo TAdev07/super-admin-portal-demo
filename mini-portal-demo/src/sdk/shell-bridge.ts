@@ -99,21 +99,45 @@ export function createShellBridgeForMiniportal(opts: ShellBridgeOptions) {
   // Auth state (simple)
   let accessToken: string | null = null
   let exp = 0
+  let lastScopes: string[] | undefined
+
+  function base64UrlDecode(input: string): string {
+    const b64 = input.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4 === 2 ? '==' : b64.length % 4 === 3 ? '=' : ''
+    if (typeof atob !== 'undefined') return atob(b64 + pad)
+    // Fallback: return original (non-SSR usage expected)
+    return input
+  }
+
+  function parseJwtExp(token: string): number | null {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    try {
+      const payloadStr = base64UrlDecode(parts[1])
+      const payload = JSON.parse(payloadStr) as { exp?: number }
+      return typeof payload.exp === 'number' ? payload.exp : null
+    } catch {
+      return null
+    }
+  }
 
   on('auth:token', (msg) => {
     const payload = msg.payload as { token: string; exp: number }
     accessToken = payload.token
-    exp = payload.exp
+  // Prefer exp from token if present
+  const parsedExp = parseJwtExp(accessToken)
+  exp = parsedExp ?? payload.exp
   })
 
   async function initAuth(scopes: string[] = []) {
+    lastScopes = scopes
     await request('auth:init', { appId, scopes })
   }
 
   async function getAccessToken() {
     if (accessToken && exp * 1000 - Date.now() > 10_000) return accessToken
-    // Re-init if near expiry
-    await initAuth()
+    // Re-init if near expiry; reuse last requested scopes if any
+    await initAuth(lastScopes)
     return accessToken
   }
 

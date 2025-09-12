@@ -4,6 +4,11 @@ Cập nhật: 2025-09-12
 
 Tài liệu này liệt kê các hạng mục (tasks) chính, trạng thái hiện tại và ưu tiên tiếp theo. Dùng để theo dõi nhanh tiến độ toàn bộ repo: API (NestJS), Frontend (Next.js), Mini-portal demo.
 
+Chiến lược Hybrid (định hướng):
+- Giai đoạn 1 (Legacy-first): Ưu tiên nhúng legacy apps qua Iframe + Token Bridge (postMessage). Đảm bảo SSO, cấp token theo scopes, và sandbox an toàn.
+- Giai đoạn 2 (Greenfield MF): Ứng dụng mới/được tin cậy dùng Module Federation để tích hợp chặt chẽ UI, dùng Shell SDK/props để lấy token.
+- Nguyên tắc: Mặc định Iframe cho app bên thứ ba; MF chỉ cho đội nội bộ/được audit, scopes tối thiểu, không tự refresh ở remote.
+
 ### Ký hiệu trạng thái
 - [x] Hoàn thành
 - [~] Một phần/Đang làm
@@ -34,6 +39,11 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 - [ ] Mini-portal SDK: Đảm bảo gọi `auth:init` với scopes và dùng header `Authorization: Bearer ...` trong sample API call.
 - [ ] Parse JWT `exp` thay vì ước lượng TTL 15 phút để cache chính xác.
 - [ ] Thêm retry/backoff, hiển thị lỗi thân thiện khi cấp token thất bại.
+
+### 2.a) Legacy Apps Onboarding (Iframe)
+- [ ] Tài liệu hoá checklist onboard legacy: đăng ký App (origins/scopes), nhúng IframeHost, cấu hình CSP, thử nghiệm token flow.
+- [ ] Mẫu cấu hình CSP/frame-src cho từng môi trường (dev/prod).
+- [ ] Kịch bản E2E: legacy iframe nhận token, gọi API thành công, lỗi sai origin/scope.
 
 ---
 
@@ -68,6 +78,17 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 - [x] Kế hoạch migration (VI) – `docs/migration-plan.md`.
 - [x] Silent SSO + Iframe Bridge – `docs/silent-sso-contract.md`.
 - [ ] README (quick start + troubleshooting), bao gồm cookie dev tips.
+- [x] System Overview (Mermaid diagrams) – `docs/system-overview.md`.
+- [x] Module Federation Variant – `docs/module-federation.md`.
+
+---
+
+## 8) Greenfield Track – Module Federation (Song song sau Legacy)
+- [ ] Shell: Nghiên cứu áp dụng `@module-federation/nextjs-mf` phù hợp phiên bản Next.js hiện tại; PoC host remote.
+- [ ] Mini-portal: Thêm `@originjs/vite-plugin-federation`, expose `./Widget` hoặc trang mẫu.
+- [ ] Shell Adapter: Truyền `accessToken`, `onRequestToken(scopes)` vào remote; không refresh ở remote.
+- [ ] Chính sách bảo mật: hạn chế shared deps, SRI/CSP, scopes tối thiểu theo app.
+- [ ] Kịch bản E2E: Shell load remote, remote gọi API với token, revoke token → hành vi đúng.
 
 ---
 
@@ -79,8 +100,9 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ---
 
 ## Ưu tiên tuần này
-1) Hoàn thiện/kiểm thử `POST /auth/app/login` (API) và flow mini-portal tiêu thụ token.
+1) Legacy-first: Hoàn thiện/kiểm thử `POST /auth/app/login` (API) và flow mini-portal (iframe) tiêu thụ token.
 2) Dọn lint/strict test backend cho kịch bản silent SSO.
 3) Chuẩn hoá cấu hình cookie dev/prod (SameSite, Secure, Domain).
 4) Parse JWT `exp` để cache token chính xác trong bridge.
 5) README: Quick start + mục “Lỗi thường gặp khi silent”.
+6) Soạn checklist onboard legacy (Iframe) + CSP mẫu.
