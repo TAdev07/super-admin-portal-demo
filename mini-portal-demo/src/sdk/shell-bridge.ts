@@ -100,6 +100,9 @@ export function createShellBridgeForMiniportal(opts: ShellBridgeOptions) {
   let accessToken: string | null = null
   let exp = 0
   let lastScopes: string[] | undefined
+  const EXPIRY_SKEW_MS = 20_000
+  const REQUEST_TIMEOUT_MS = 6_000
+  const MAX_RETRIES = 3
 
   function base64UrlDecode(input: string): string {
     const b64 = input.replace(/-/g, '+').replace(/_/g, '/')
@@ -131,14 +134,28 @@ export function createShellBridgeForMiniportal(opts: ShellBridgeOptions) {
 
   async function initAuth(scopes: string[] = []) {
     lastScopes = scopes
-    await request('auth:init', { appId, scopes })
+    await request('auth:init', { appId, scopes }, REQUEST_TIMEOUT_MS)
   }
 
   async function getAccessToken() {
-    if (accessToken && exp * 1000 - Date.now() > 10_000) return accessToken
+    if (accessToken && exp * 1000 - Date.now() > EXPIRY_SKEW_MS) return accessToken
     // Re-init if near expiry; reuse last requested scopes if any
-    await initAuth(lastScopes)
-    return accessToken
+    let attempt = 0
+    let lastErr: unknown
+    while (attempt < MAX_RETRIES) {
+      try {
+        await initAuth(lastScopes)
+        if (accessToken) return accessToken
+        throw new Error('token_absent_after_init')
+      } catch (e) {
+        lastErr = e
+        await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** attempt, 4000)))
+        attempt++
+      }
+    }
+    throw new Error(
+      `auth_token_refresh_failed: ${(lastErr as Error)?.message ?? 'unknown'}`,
+    )
   }
 
   function dispose() {

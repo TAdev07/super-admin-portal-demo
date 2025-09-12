@@ -35,13 +35,13 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ## 2) Iframe Token Bridge (Phase 1.5 – Chuẩn bị Phase 4)
 - [x] Shell bridge: postMessage topics `app:ready`, `auth:init`, `auth:token`, `auth:error`.
 - [x] Caching token theo scopes; làm mới khi gần hết hạn (<30s trước exp tạm tính).
-- [~] Backend: Endpoint `POST /auth/app/login` – cần xác nhận/hoàn thiện phía API (request: `{ appName, origin, requestedScopes }`).
-- [ ] Mini-portal SDK: Đảm bảo gọi `auth:init` với scopes và dùng header `Authorization: Bearer ...` trong sample API call.
-- [ ] Parse JWT `exp` thay vì ước lượng TTL 15 phút để cache chính xác.
-- [ ] Thêm retry/backoff, hiển thị lỗi thân thiện khi cấp token thất bại.
+- [x] Backend: Endpoint `POST /auth/app/login` – đã xác nhận e2e, trả `{ access_token, scopes }` (403 khi scope không hợp lệ).
+- [x] Mini-portal SDK: Gọi `auth:init` với scopes và gửi `Authorization: Bearer ...` trong `api-client.ts`.
+- [x] Parse JWT `exp` thay vì ước lượng TTL để cache chính xác (đã thêm vào shell bridge và mini-portal SDK).
+- [x] Thêm retry/backoff + timeout khi xin token thất bại trong SDK.
 
 ### 2.a) Legacy Apps Onboarding (Iframe)
-- [ ] Tài liệu hoá checklist onboard legacy: đăng ký App (origins/scopes), nhúng IframeHost, cấu hình CSP, thử nghiệm token flow.
+- [x] Tài liệu hoá checklist onboard legacy: đăng ký App (origins/scopes), nhúng IframeHost, cấu hình CSP, thử nghiệm token flow.
 - [ ] Mẫu cấu hình CSP/frame-src cho từng môi trường (dev/prod).
 - [ ] Kịch bản E2E: legacy iframe nhận token, gọi API thành công, lỗi sai origin/scope.
 
@@ -68,8 +68,8 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ---
 
 ## 6) QA, Tooling & Bảo mật cơ bản
-- [ ] Lint/Typecheck PASS toàn repo (dọn cảnh báo test backend).
-- [ ] E2E flows quan trọng: login → refresh (silent) → logout; iframe cross-site.
+- [~] Lint/Typecheck PASS toàn repo (đã PASS backend; còn soát FE/miniportal khi bật strict).
+- [x] E2E flows quan trọng: login → refresh (silent) → /users/me; app-login (iframe token) – đã PASS. Thêm các case negative sau.
 - [ ] Rate limiting cơ bản; cấu hình Helmet/CSP phù hợp.
 
 ---
@@ -77,7 +77,7 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ## 7) Tài liệu
 - [x] Kế hoạch migration (VI) – `docs/migration-plan.md`.
 - [x] Silent SSO + Iframe Bridge – `docs/silent-sso-contract.md`.
-- [ ] README (quick start + troubleshooting), bao gồm cookie dev tips.
+- [x] README (quick start + troubleshooting), bao gồm cookie dev tips.
 - [x] System Overview (Mermaid diagrams) – `docs/system-overview.md`.
 - [x] Module Federation Variant – `docs/module-federation.md`.
 
@@ -85,7 +85,8 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 
 ## 8) Greenfield Track – Module Federation (Song song sau Legacy)
 - [ ] Shell: Nghiên cứu áp dụng `@module-federation/nextjs-mf` phù hợp phiên bản Next.js hiện tại; PoC host remote.
-- [ ] Mini-portal: Thêm `@originjs/vite-plugin-federation`, expose `./Widget` hoặc trang mẫu.
+- [x] Mini-portal: Thêm `@originjs/vite-plugin-federation`, expose `./Widget` hoặc trang mẫu.
+-    - App mới: `mini-portal-mf` (Vite React TS), cổng dev `5174`, remote name `mini_portal_mf`, remote entry `/assets/remoteEntry.js` (dev)
 - [ ] Shell Adapter: Truyền `accessToken`, `onRequestToken(scopes)` vào remote; không refresh ở remote.
 - [ ] Chính sách bảo mật: hạn chế shared deps, SRI/CSP, scopes tối thiểu theo app.
 - [ ] Kịch bản E2E: Shell load remote, remote gọi API với token, revoke token → hành vi đúng.
@@ -100,9 +101,8 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ---
 
 ## Ưu tiên tuần này
-1) Legacy-first: Hoàn thiện/kiểm thử `POST /auth/app/login` (API) và flow mini-portal (iframe) tiêu thụ token.
-2) Dọn lint/strict test backend cho kịch bản silent SSO.
-3) Chuẩn hoá cấu hình cookie dev/prod (SameSite, Secure, Domain).
-4) Parse JWT `exp` để cache token chính xác trong bridge.
-5) README: Quick start + mục “Lỗi thường gặp khi silent”.
-6) Soạn checklist onboard legacy (Iframe) + CSP mẫu.
+1) Negative tests: origin mismatch, scope không được phép, cookie thiếu/hết hạn.
+2) CSP/frame-src mẫu cho dev/prod và kiểm thử với Helmet hiện tại.
+3) Chuẩn hoá cấu hình cookie dev/prod (SameSite, Secure, Domain) – cập nhật .env.example nếu cần.
+4) Lint/typecheck toàn repo (FE + mini-portal) và thêm guard UI theo scopes.
+5) E2E iframe end-to-end (postMessage handshake) – bổ sung mô phỏng trong test hoặc playwright.
