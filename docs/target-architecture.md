@@ -4,7 +4,7 @@ This document describes the system architecture for the Hybrid approach where Su
 
 ## Components
 
-- SuperPortal (Next.js)
+- SuperPortal (Vite React)
   - SSO Provider: login/session, refresh tokens (httpOnly cookie), issue short-lived JWT per app scope.
   - Event Bus: postMessage-based bridge (Iframe) and props bridge (module MF) with versioned contracts.
   - App Host: renders Iframe(s), manages origin allowlist, CSP, sandbox, app registry.
@@ -60,4 +60,4 @@ This document describes the system architecture for the Hybrid approach where Su
 - Event bus working both directions with correlation IDs and timeouts.
 - Logout broadcast clears sessions across iframes.
 
-Refer to `docs/hybrid-contract.md` for the message and scope contract, and to the TS helpers in `super-admin-frontend/src/lib` and `mini-portal-demo/src/sdk` for code samples.
+Refer to `docs/hybrid-contract.md` for the message and scope contract, and to the TS helpers in `super-admin-shell/src/shared` and `mini-portal-demo/src/sdk` for code samples.

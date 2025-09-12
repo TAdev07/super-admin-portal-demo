@@ -13,7 +13,7 @@ Mục tiêu: Onboard ứng dụng legacy vào Super Admin Portal thông qua Ifra
 - Ví dụ: `<IframeHost appId="legacy-erp" src="https://legacy.local" allowedOrigin="https://legacy.local" requestedScopes={['users:read']} />`
 
 3) Cấu hình CSP
-- Ở Shell (Next.js), thêm header:
+- Ở Shell (Vite React), thêm header (qua backend API Helmet và reverse proxy khi cần):
   - `Content-Security-Policy: frame-src 'self' https://legacy.local; frame-ancestors 'none'; default-src 'self';`
   - Điều chỉnh `script-src`, `connect-src` cho API endpoints cần thiết.
 

@@ -4,13 +4,13 @@ This document extends the Hybrid Contract to include a Module Federation (MF) op
 
 ## Architecture
 
-- Shell (Next.js) is the MF host.
+- Shell (Vite React in this repo) can act as MF host via `@originjs/vite-plugin-federation` (or another integration). A Next.js host is also possible but not used here.
 - Mini-portal (Vite/React) is a remote exposing one or more components/pages.
 - Auth still follows the same model: Shell manages identity (silent SSO, refresh cookie) and provides access tokens to remote modules via props or a shell SDK.
 
 ```mermaid
 flowchart LR
-  Shell[Next.js Shell] -- dynamic import --> Remote[Mini-portal Remote]
+  Shell[Vite React Shell] -- dynamic import --> Remote[Mini-portal Remote]
   Shell -- axios (Bearer) --> API[NestJS API]
   Remote -- props/context --> ShellAuth[Shell Auth SDK]
   API --- DB[(DB)]
@@ -21,7 +21,7 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Shell as Next.js Shell (Host)
+  participant Shell as Vite React Shell (Host)
   participant Remote as Remote Module (Vite)
   participant API as Backend API
 
@@ -38,35 +38,28 @@ sequenceDiagram
   - Remote must not try to refresh tokens; only Shell refreshes. Remote can call `onRequestToken(scopes)` to ask Shell for a fresh scoped token.
 - The same Topics from Hybrid Contract can be reused as internal events if needed (without postMessage).
 
-## Shell (Next.js) – Example Config
+## Shell (Vite) – Example Host Config (sketch)
 
-Note: Next.js with native Webpack Module Federation requires a plugin like `@module-federation/nextjs-mf`. Below is a sketch; verify versions and constraints before adopting.
+Use `@originjs/vite-plugin-federation` to host remotes in Vite as well.
 
 ```ts
-// next.config.mjs (sketch)
-import { NextFederationPlugin } from '@module-federation/nextjs-mf'
+// super-admin-shell/vite.config.ts (sketch only)
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import federation from '@originjs/vite-plugin-federation'
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack(config, { isServer }) {
-    config.plugins.push(
-      new NextFederationPlugin({
-        name: 'super_admin_shell',
-        remotes: {
-          mini_portal_demo: `mini_portal_demo@http://localhost:5173/assets/remoteEntry.js`,
-        },
-        filename: 'remoteEntry.js',
-        exposes: {},
-        shared: {
-          react: { singleton: true, eager: true, requiredVersion: false },
-          'react-dom': { singleton: true, eager: true, requiredVersion: false },
-        },
-      })
-    )
-    return config
-  },
-}
-export default nextConfig
+export default defineConfig({
+  plugins: [
+    react(),
+    federation({
+      name: 'super_admin_shell',
+      remotes: {
+        mini_portal_mf: 'http://localhost:5174/assets/remoteEntry.js'
+      },
+      shared: ['react', 'react-dom']
+    })
+  ]
+})
 ```
 
 ## Mini-portal (Vite) – Example Config

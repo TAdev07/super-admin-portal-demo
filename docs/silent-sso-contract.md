@@ -1,7 +1,7 @@
 # Silent SSO Contract
 
 ## Mục tiêu
-Cho phép shell (Next.js) tự động lấy access token và profile người dùng khi đã có refresh cookie HttpOnly mà không cần tương tác đăng nhập lại.
+Cho phép Shell (Vite React) tự động lấy access token và profile người dùng khi đã có refresh cookie HttpOnly mà không cần tương tác đăng nhập lại.
 
 ## Luồng tổng quát
 1. Trình duyệt có cookie `refresh_token` (được set khi login / register trước đó, `SameSite=None; Secure` trong iframe scenario; mặc định hiện tại là lax cho login trực tiếp).

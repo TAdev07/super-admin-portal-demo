@@ -10,14 +10,14 @@ title Super Admin Portal - System Context
 
 Person(admin, "Super Admin", "Manages users, apps, and permissions")
 System_Boundary(sap, "Super Admin Portal") {
-  System(frontend, "Super Admin Frontend (Next.js)", "Shell UI, Auth bootstrap, Iframe host")
+  System(frontend, "Super Admin Shell (Vite React)", "Shell UI, Auth bootstrap, Iframe host")
   System(api, "Super Admin API (NestJS)", "Auth, Users, Apps, Audit")
   System(mini, "Mini-Portal App (Vite)", "Embedded iframe app")
 }
 SystemDb(db, "Database", "Users, Roles, Permissions, Apps, Audit logs")
 
 Rel(admin, frontend, "Uses via browser")
-Rel(frontend, api, "HTTPS /api/* with access token & refresh cookie")
+Rel(frontend, api, "HTTP(S) /api/* with access token & refresh cookie")
 Rel(mini, frontend, "postMessage: auth:init/token/error (iframe)")
 Rel(api, db, "TypeORM")
 ```
@@ -27,7 +27,7 @@ Rel(api, db, "TypeORM")
 ```mermaid
 sequenceDiagram
   autonumber
-  participant FE as Frontend (Shell)
+  participant FE as Shell (Vite React)
   participant API as Backend API
   participant DB as Database
 
@@ -47,7 +47,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant Mini as Mini-Portal (iframe)
-  participant FE as Frontend (Shell)
+  participant FE as Shell (Vite React)
   participant API as Backend API
   participant DB as Database
 
@@ -128,7 +128,7 @@ erDiagram
 ```mermaid
 flowchart LR
   subgraph Local Dev
-    FE[Frontend :3000]
+  FE[Shell :3000]
     API[API :3001]
     MINI[Mini-portal :5173]
     DB[(DB)]

@@ -2,7 +2,7 @@
 
 Cập nhật: 2025-09-12
 
-Tài liệu này liệt kê các hạng mục (tasks) chính, trạng thái hiện tại và ưu tiên tiếp theo. Dùng để theo dõi nhanh tiến độ toàn bộ repo: API (NestJS), Frontend (Next.js), Mini-portal demo.
+Tài liệu này liệt kê các hạng mục (tasks) chính, trạng thái hiện tại và ưu tiên tiếp theo. Dùng để theo dõi nhanh tiến độ toàn bộ repo: API (NestJS), Shell (Vite React), Mini-portals.
 
 Chiến lược Hybrid (định hướng):
 - Giai đoạn 1 (Legacy-first): Ưu tiên nhúng legacy apps qua Iframe + Token Bridge (postMessage). Đảm bảo SSO, cấp token theo scopes, và sandbox an toàn.
@@ -19,10 +19,10 @@ Chiến lược Hybrid (định hướng):
 ## 1) Phase 1 – PoC SSO + Profile
 - [x] Backend: Endpoint `GET /auth/silent` (trace, refresh rotation, set cookie) – đã hoạt động.
 - [x] Backend: `GET /users/me` trả profile enriched (roles, permissions, scopes).
-- [x] Frontend: Axios `withCredentials`, interceptor 401 → điều hướng login.
-- [x] Frontend: AuthContext khởi tạo silent SSO, cache profile, fallback legacy `user` khi thiếu `user_profile`.
-- [x] Frontend: Trang `login` gọi thêm `GET /users/me` sau khi nhận token và lưu `user_profile`.
-- [x] Frontend: `(protected)/layout` dùng `useAuth()` để gate & redirect `/login` khi chưa auth.
+- [x] Shell: Axios `withCredentials`, interceptor 401 → điều hướng login.
+- [x] Shell: Khởi tạo silent SSO, cache profile, fallback legacy `user` khi thiếu `user_profile`.
+- [x] Shell: Trang đăng nhập lấy `GET /users/me` sau khi nhận token và lưu `user_profile`.
+- [x] Shell: Bảo vệ route/module theo session (redirect `/login` khi chưa auth).
 - [x] Dashboard hiển thị thông tin user, fallback vai trò (`legacyRole` hoặc `roles[0]`).
 - [~] E2E: Kịch bản register → silent → `/users/me` (đã có, còn dọn lint/strict) – TODO cleanup.
 - [~] Docs: Silent SSO + troubleshooting cookie – đã thêm mục sự cố; cần bổ sung ví dụ network ảnh minh hoạ (tuỳ chọn).
@@ -84,7 +84,7 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ---
 
 ## 8) Greenfield Track – Module Federation (Song song sau Legacy)
-- [ ] Shell: Nghiên cứu áp dụng `@module-federation/nextjs-mf` phù hợp phiên bản Next.js hiện tại; PoC host remote.
+- [ ] Shell: PoC host remote qua `@originjs/vite-plugin-federation` (hoặc biến thể phù hợp) – cân nhắc chia nhánh thử nghiệm.
 - [x] Mini-portal: Thêm `@originjs/vite-plugin-federation`, expose `./Widget` hoặc trang mẫu.
 -    - App mới: `mini-portal-mf` (Vite React TS), cổng dev `5174`, remote name `mini_portal_mf`, remote entry `/assets/remoteEntry.js` (dev)
 - [ ] Shell Adapter: Truyền `accessToken`, `onRequestToken(scopes)` vào remote; không refresh ở remote.

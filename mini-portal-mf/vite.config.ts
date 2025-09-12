@@ -12,10 +12,8 @@ export default defineConfig({
         './Widget': './src/Widget.tsx',
         './App': './src/App.tsx'
       },
-      shared: {
-        react: { singleton: true, eager: false, requiredVersion: '^18.0.0' },
-        'react-dom': { singleton: true, eager: false, requiredVersion: '^18.0.0' }
-      }
+  // Use shorthand to avoid TS type mismatch; host provides React singletons
+  shared: ['react', 'react-dom']
     })
   ],
   server: {

@@ -76,6 +76,6 @@ This document details the SSO design, token formats, flows, and security conside
 
 ## Implementation Notes
 
-- See `src/lib/sso.ts` for a shell-side sample that handles `auth:init` and emits `auth:token`.
+- See `super-admin-shell/src/shared/sso.ts` for a shell-side sample that handles `auth:init` and emits `auth:token`.
 - Replace the demo `issueToken` with real session-backed issuance and RS256 signing.
 - Align scopes with `docs/hybrid-contract.md` and enforce in NestJS guards.

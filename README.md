@@ -1,24 +1,26 @@
 # Super Admin Portal (Monorepo)
 
-Monorepo gồm 3 app:
+Monorepo gồm các app:
 - super-admin-api (NestJS) — Auth, Users, Apps, Audit
-- super-admin-frontend (Next.js App Router) — Shell UI, silent SSO, iframe host
-- mini-portal-demo (Vite React TS) — Mini app mẫu dùng token từ Shell
+- super-admin-shell (Vite React) — Shell UI, silent SSO, iframe host, optional MF host
+- mini-portal-demo (Vite React TS) — Mini app mẫu nhận token qua postMessage
+- mini-portal-mf (Vite React TS) — Remote demo cho Module Federation
 
 ## Quick Start (Dev)
 
 1) Cài đặt dependencies trong từng thư mục app
-2) Cấu hình env (tham khảo `.env.example` trong mỗi app)
+2) Cấu hình env (tham khảo `.env.example` trong mỗi app nếu có)
 3) Chạy:
 - API: `npm run start:dev` tại `super-admin-api` (http://localhost:3001)
-- Frontend: `npm run dev` tại `super-admin-frontend` (http://localhost:3000)
-- Mini-portal: `npm run dev` tại `mini-portal-demo` (http://localhost:5173)
+- Shell: `npm run dev` tại `super-admin-shell` (http://localhost:3000)
+- Mini-portal (iframe): `npm run dev` tại `mini-portal-demo` (http://localhost:5173)
+- Mini-portal (MF remote): `npm run dev` tại `mini-portal-mf` (http://localhost:5174)
 
-Lưu ý: Dùng cùng host (localhost vs 127.0.0.1) để cookie refresh hoạt động ổn định.
+Lưu ý: Dùng cùng host (localhost hoặc 127.0.0.1) nhất quán để cookie refresh hoạt động ổn định. API hiện bật CORS cho `http://localhost:3000` và prefix `api` (ví dụ: `http://localhost:3001/api/auth/silent`).
 
 ## Hybrid Strategy
-- Legacy-first (Iframe + Token Bridge): cách mặc định cho app bên thứ ba, isolation tốt.
-- Greenfield (Module Federation): cho app mới/được tin cậy, tích hợp UI chặt chẽ.
+- Legacy-first (Iframe + Token Bridge): cách mặc định cho app bên thứ ba, isolation tốt, cấp token app-scoped qua postMessage.
+- Greenfield (Module Federation): cho app mới/được tin cậy, tích hợp UI chặt chẽ. Shell có thể host remote qua vite-plugin-federation.
 
 ## Tài liệu
 - System Overview: `docs/system-overview.md`
@@ -29,11 +31,11 @@ Lưu ý: Dùng cùng host (localhost vs 127.0.0.1) để cookie refresh hoạt �
 
 ## Troubleshooting (nhanh)
 - Silent SSO fail do cookie:
-  - Tránh trộn `localhost` và `127.0.0.1`
-  - Dev HTTP: COOKIE_SAMESITE=lax, COOKIE_SECURE=false
-  - HTTPS/cross-site iframe: COOKIE_SAMESITE=none, COOKIE_SECURE=true
-- Iframe bị chặn: kiểm tra CSP `frame-src` và origin của app.
-- Token gần hết hạn: Shell/SDK sẽ cấp lại trước ~20s.
+  - Tránh trộn `localhost` và `127.0.0.1` giữa login và silent.
+  - Dev HTTP: COOKIE_SAMESITE=lax, COOKIE_SECURE=false (đang áp dụng cho login/refresh interactive).
+  - HTTPS/cross-site iframe: COOKIE_SAMESITE=none, COOKIE_SECURE=true (đang áp dụng cho silent/iframe).
+- Iframe bị chặn: kiểm tra CSP `frame-src`/`frame-ancestors` (Helmet) và origin của app trong DB.
+- Token sắp hết hạn: Shell/SDK sẽ cấp lại; bridge cache theo scopes và làm mới khi <30s trước `exp`.
 
 ## E2E/Tests
 - API e2e: `npm run test:e2e` trong `super-admin-api`

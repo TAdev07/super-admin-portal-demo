@@ -90,8 +90,8 @@ Scope rules are enforced in the API Core (NestJS) and also by the Shell for shel
 ## Minimal Code Samples
 
 See:
-- `super-admin-frontend/src/lib/eventBus.ts` – Event bus (shell-side helpers)
-- `super-admin-frontend/src/lib/sso.ts` – SSO handshake (shell-side)
+- `super-admin-shell/src/shared/eventBus.ts` – Event bus (shell-side helpers)
+- `super-admin-shell/src/shared/sso.ts` – SSO handshake (shell-side)
 - `mini-portal-demo/src/sdk/shell-bridge.ts` – MiniPortal SDK bridge
 
 Usage (MiniPortal → request token):
