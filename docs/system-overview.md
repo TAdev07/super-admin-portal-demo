@@ -61,6 +61,37 @@ sequenceDiagram
   Mini->>API: Authorized API calls with Bearer token
 ```
 
+## 3b) Module Federation (MF) Architecture & Sequence
+
+MF is an alternative to iframe embedding for trusted remotes, enabling tighter UX and shared runtime while the Shell remains the system of record for auth and token issuance.
+
+```mermaid
+graph LR
+  Shell[Super Admin Shell (Host)] -->|dynamic import| Remote[mini-portal-mf (Remote)]
+  Shell -->|axios Bearer| API[NestJS API]
+  Remote -->|props/context| AuthSDK[Shell Auth SDK]
+  API --- DB[(DB)]
+```
+
+### MF Sequence (Loading a Remote and Token Flow)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Shell as Vite React Shell (Host)
+  participant Remote as Remote Module (Vite)
+  participant API as Backend API
+
+  Shell->>Shell: silentAuthenticate() if needed
+  Shell->>Remote: loadRemoteComponent("mini_portal_mf/Widget")
+  Shell->>Remote: render Widget(onRequestToken)
+  Remote->>Shell: onRequestToken([scopes])
+  Shell->>API: POST /api/auth/app/login { appName, origin, requestedScopes }
+  API-->>Shell: 200 { token, exp }
+  Shell-->>Remote: resolve onRequestToken() => token
+  Remote->>API: call API with Bearer token
+```
+
 ## 4) Data Model (ER Overview)
 
 ```mermaid
@@ -126,20 +157,23 @@ erDiagram
 ## 5) Deployment (Dev setup)
 
 ```mermaid
-flowchart LR
-  subgraph Local Dev
-  FE[Shell :3000]
+graph LR
+  subgraph Local_Dev
+    FE[Shell :3000]
     API[API :3001]
-    MINI[Mini-portal :5173]
+    MINI[Mini-portal (iframe) :5173]
+    MF[Mini-portal MF :5174]
     DB[(DB)]
   end
-  FE <-- withCredentials /api --> API
+  FE -->|withCredentials /api| API
   API --- DB
-  FE -. iframe postMessage .-> MINI
+  FE -.->|iframe postMessage| MINI
   %% Optional MF path
-  FE -. MF import .-> MINI
+  FE -.->|MF dynamic import| MF
 ```
 
 Notes
 - Keep cookie and origins consistent (localhost vs 127.0.0.1) to avoid refresh cookie issues.
 - Update scopes in both the Shell bridge and server validation when extending permissions.
+- MF remotes receive tokens via props/callback (e.g., onRequestToken); only the Shell refreshes tokens.
+- Enforce server-side validation for app origins and requested scopes for both iframe and MF flows.
