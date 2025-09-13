@@ -84,11 +84,12 @@ Kết quả hiện tại: Trải nghiệm đăng nhập, refresh trang, và hi�
 ---
 
 ## 8) Greenfield Track – Module Federation (Song song sau Legacy)
-- [ ] Shell: PoC host remote qua `@originjs/vite-plugin-federation` (hoặc biến thể phù hợp) – cân nhắc chia nhánh thử nghiệm.
+- [x] Shell: PoC host remote qua `@originjs/vite-plugin-federation` (hoặc biến thể phù hợp) – đã cấu hình.
 - [x] Mini-portal: Thêm `@originjs/vite-plugin-federation`, expose `./Widget` hoặc trang mẫu.
 -    - App mới: `mini-portal-mf` (Vite React TS), cổng dev `5174`, remote name `mini_portal_mf`, remote entry `/assets/remoteEntry.js` (dev)
-- [ ] Shell Adapter: Truyền `accessToken`, `onRequestToken(scopes)` vào remote; không refresh ở remote.
-- [ ] Chính sách bảo mật: hạn chế shared deps, SRI/CSP, scopes tối thiểu theo app.
+- [x] Shell Adapter: Truyền `accessToken`, `onRequestToken(scopes)` vào remote; không refresh ở remote.
+- [x] Backend: Cập nhật seed data để hỗ trợ `shell-mf-host` và `mini_portal_mf` với scopes phù hợp.
+- [x] Chính sách bảo mật: hạn chế shared deps, SRI/CSP, scopes tối thiểu theo app.
 - [ ] Kịch bản E2E: Shell load remote, remote gọi API với token, revoke token → hành vi đúng.
 
 ---

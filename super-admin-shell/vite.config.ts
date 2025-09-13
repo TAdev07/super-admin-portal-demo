@@ -1,10 +1,20 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import federation from '@originjs/vite-plugin-federation';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    federation({
+      name: 'super_admin_shell',
+      remotes: {
+        'mini_portal_mf': 'http://localhost:5174/assets/remoteEntry.js',
+      },
+      shared: ['react', 'react-dom']
+    })
+  ],
   server: {
-  port: 3000,
+    port: 3000,
     strictPort: true,
   },
   build: {
