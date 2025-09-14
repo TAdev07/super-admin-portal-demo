@@ -17,7 +17,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  LinkOutlined,
   GlobalOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -32,6 +31,8 @@ interface AppFormData {
   name: string;
   code: string;
   icon?: string;
+  origin?: string;
+  allowedScopesCsv?: string; // UI uses CSV string, we'll map to string[] when submitting
   bundleFile?: File;
 }
 
@@ -55,7 +56,10 @@ export default function ManageApps() {
 
   const handleEdit = (app: AppItem) => {
     setEditingApp(app);
-    form.setFieldsValue(app);
+    form.setFieldsValue({
+      ...app,
+      allowedScopesCsv: (app.allowedScopes || []).join(',')
+    });
     setFormFileList([]);
     setIsModalVisible(true);
   };
@@ -77,6 +81,10 @@ export default function ManageApps() {
         name: values.name,
         code: values.code,
         icon: values.icon,
+        origin: values.origin,
+        allowedScopes: values.allowedScopesCsv
+          ? values.allowedScopesCsv.split(',').map(s => s.trim()).filter(Boolean)
+          : undefined,
         bundleFile: formFileList.length > 0 ? formFileList[0] : undefined,
       };
 
@@ -164,6 +172,28 @@ export default function ManageApps() {
           >
             {remoteEntry ? "Update" : "Upload"}
           </Button>
+        </Space>
+      ),
+    },
+    {
+      title: 'Origin',
+      dataIndex: 'origin',
+      key: 'origin',
+      render: (origin?: string) => origin ? (
+        <div style={{ fontFamily: 'monospace', background: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>
+          {origin}
+        </div>
+      ) : <Tag color="default">N/A</Tag>,
+    },
+    {
+      title: 'Allowed Scopes',
+      dataIndex: 'allowedScopes',
+      key: 'allowedScopes',
+      render: (scopes?: string[]) => (
+        <Space wrap>
+          {(scopes && scopes.length > 0) ? scopes.map(s => (
+            <Tag key={s} color="geekblue">{s}</Tag>
+          )) : <Tag color="default">None</Tag>}
         </Space>
       ),
     },
@@ -285,6 +315,22 @@ export default function ManageApps() {
             ]}
           >
             <Input placeholder="my-app-code" />
+          </Form.Item>
+
+          <Form.Item
+            label="Origin (tuỳ chọn)"
+            name="origin"
+            tooltip="Origin của shell/host được phép phát hành token cho app này (ví dụ: http://localhost:3000)"
+          >
+            <Input placeholder="http://localhost:3000" />
+          </Form.Item>
+
+          <Form.Item
+            label="Allowed Scopes (CSV, tuỳ chọn)"
+            name="allowedScopesCsv"
+            tooltip="Danh sách scopes được phép cho app này, phân tách bằng dấu phẩy"
+          >
+            <Input placeholder="read:demo,write:demo,bus:publish" />
           </Form.Item>
 
           <Form.Item

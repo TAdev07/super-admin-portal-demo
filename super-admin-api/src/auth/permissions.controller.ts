@@ -20,28 +20,28 @@ export class PermissionsController {
   constructor(private readonly perms: PermissionsService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Scopes('permissions.write')
+  @Scopes('permissions:write')
   @Post()
   create(@Body() dto: CreatePermissionDto) {
     return this.perms.create(dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Scopes('permissions.read')
+  @Scopes('permissions:read')
   @Get()
   findAll() {
     return this.perms.findAll();
   }
 
   @UseGuards(JwtAuthGuard)
-  @Scopes('permissions.read')
+  @Scopes('permissions:read')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.perms.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Scopes('permissions.write')
+  @Scopes('permissions:write')
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -51,7 +51,7 @@ export class PermissionsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Scopes('permissions.write')
+  @Scopes('permissions:write')
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.perms.remove(id);

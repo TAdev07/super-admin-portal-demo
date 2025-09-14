@@ -1,10 +1,11 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Spin, Alert } from 'antd';
 import { apiClient } from '../shared/auth';
 import type { App } from '../types/app'; // Assuming you have this type defined
+import { MfAdapter } from '../shared/mf-adapter';
 
 // Helper to load an ESM script (Vite MF remote builds remoteEntry.js as ESM using import.meta)
 const loadScript = (src: string): Promise<void> => {
@@ -123,16 +124,20 @@ const loadRemoteComponent = (remoteName: string, remoteUrl: string, exposedModul
 
 const DynamicAppViewer: React.FC = () => {
   const { appCode } = useParams<{ appCode: string }>();
+  const [searchParams] = useSearchParams();
   const [RemoteComponent, setRemoteComponent] = useState<React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appMeta, setAppMeta] = useState<{ name: string; allowedScopes?: string[] } | null>(null);
+  console.log('appMeta: ', appMeta);
 
   useEffect(() => {
     const fetchAppAndLoad = async () => {
       if (!appCode) return;
 
-      try {
+    try {
   const { data: apps } = await apiClient.get<App[]>('/apps');
   const targetApp = (apps as Array<App & { code?: string }>).find(app => app.code === appCode);
+  console.log('targetApp: ', targetApp);
 
         if (targetApp && targetApp.remoteEntry) {
           // Remove /api prefix and construct correct static file URL
@@ -141,6 +146,7 @@ const DynamicAppViewer: React.FC = () => {
           console.log('Loading remote entry from:', fullRemoteEntryUrl);
           const Component = loadRemoteComponent(targetApp.name, fullRemoteEntryUrl, './Widget');
           setRemoteComponent(Component);
+          setAppMeta({ name: targetApp.name, allowedScopes: targetApp.allowedScopes });
         } else {
           setError(`App with code '${appCode}' is not configured for dynamic loading or does not exist.`);
         }
@@ -153,17 +159,44 @@ const DynamicAppViewer: React.FC = () => {
     fetchAppAndLoad();
   }, [appCode]);
 
+  // Build default scopes from query (?scopes=a,b) or app's allowedScopes
+  const scopesParam = searchParams.get('scopes')
+  const defaultScopes = scopesParam
+    ? scopesParam.split(',').map(s => s.trim()).filter(Boolean)
+    : (appMeta?.allowedScopes ?? [])
+
+  // Provide host handler props (token, profile, apps, logout) to the remote component
+  const remoteProps = MfAdapter.createRemoteProps({
+    title: appCode,
+    appName: appMeta?.name,
+    defaultScopes,
+  })
+
   if (error) {
     return <Alert message="Error" description={error} type="error" showIcon />;
   }
 
+  // Avoid rendering remote before we have defaultScopes to prevent empty scope requests
   if (!RemoteComponent) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin size="large" /></div>;
   }
 
+  if (!defaultScopes.length) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <Alert
+          message="Scopes chưa sẵn sàng"
+          description="Ứng dụng đang tải cấu hình quyền truy cập. Vui lòng đợi một lát hoặc cung cấp scopes qua query string, ví dụ: ?scopes=read:demo,write:demo"
+          type="info"
+          showIcon
+        />
+      </div>
+    )
+  }
+
   return (
     <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin size="large" /></div>}>
-      <RemoteComponent />
+      <RemoteComponent {...remoteProps} />
     </Suspense>
   );
 };

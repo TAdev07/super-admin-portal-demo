@@ -31,15 +31,17 @@ export class ScopesGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const userScopes: string[] = (user.scopes || user.scp || []).slice();
-    const missing: string[] = required.filter(
+    const normalize = (s: string) => s.replace(/\./g, ':');
+    const reqNorm = required.map(normalize);
+    const userScopes: string[] = (user.scopes || user.scp || []).map(normalize);
+    const missing: string[] = reqNorm.filter(
       (s: string) => !userScopes.includes(s),
     );
     if (missing.length) {
       throw new ForbiddenException({
         message: `Missing required scope(s): ${missing.join(', ')}`,
         missingScopes: missing,
-        required,
+        required: reqNorm,
         have: userScopes,
       });
     }

@@ -8,6 +8,8 @@ export interface AppItem {
   code: string
   icon?: string
   remoteEntry?: string
+  origin?: string
+  allowedScopes?: string[]
 }
 
 export interface CreateAppData {
@@ -15,6 +17,8 @@ export interface CreateAppData {
   code: string
   icon?: string
   bundleFile?: File
+  origin?: string
+  allowedScopes?: string[]
 }
 
 interface AppContextType {
@@ -62,6 +66,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (appData.icon) {
           formData.append('icon', appData.icon)
         }
+        if (appData.origin) {
+          formData.append('origin', appData.origin)
+        }
+        // Note: allowedScopes via multipart can be tricky to transform on the server; prefer updating via PATCH after create
         formData.append('bundle', appData.bundleFile)
 
         const response = await apiClient.post('/apps/with-bundle', formData, {
@@ -79,6 +87,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: appData.name,
           code: appData.code,
           icon: appData.icon,
+          origin: appData.origin,
+          allowedScopes: appData.allowedScopes,
         }
         const response = await apiClient.post('/apps', jsonData)
         const newApp = response.data as AppItem
@@ -102,6 +112,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (appData.name) formData.append('name', appData.name)
         if (appData.code) formData.append('code', appData.code)
         if (appData.icon) formData.append('icon', appData.icon)
+        if (appData.origin) formData.append('origin', appData.origin)
+        // Prefer updating allowedScopes via JSON PATCH without bundle to ensure proper array typing on server
         formData.append('bundle', appData.bundleFile)
 
         const response = await apiClient.patch(`/apps/${id}/with-bundle`, formData, {
@@ -119,6 +131,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: appData.name,
           code: appData.code,
           icon: appData.icon,
+          origin: appData.origin,
+          allowedScopes: appData.allowedScopes,
         }
         const response = await apiClient.patch(`/apps/${id}`, jsonData)
         const updated = response.data as AppItem
@@ -192,6 +206,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAppStore() {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useAppStore must be used within AppProvider')

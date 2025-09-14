@@ -65,11 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setHasInitialized(true)
     runSilent().finally(() => setInitializing(false))
-  }, [runSilent, hasInitialized])
+  }, [hasInitialized])
 
   const refresh = useCallback(async () => {
     await runSilent()
-  }, [runSilent])
+  }, [])
 
   const logout = useCallback(async () => {
     try {

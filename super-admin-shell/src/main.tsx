@@ -17,7 +17,6 @@ import './styles/globals.css'
 import { AuthProvider, useAuth } from './modules/auth/AuthContext'
 import { AppProvider } from './context/AppContext'
 import AppMenu from './components/AppMenu'
-import AppViewer from './components/AppViewer'
 import DynamicAppViewer from './components/DynamicAppViewer'
 import Dashboard from './modules/dashboard/Dashboard'
 import Login from './modules/auth/Login'
@@ -121,7 +120,6 @@ function AppLayout() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="apps" element={<ManageApps />} />
             <Route path="users" element={<ManageUsers />} />
-            <Route path="app/:appName" element={<AppViewer />} />
             <Route path="dynamic-app/:appCode" element={<DynamicAppViewer />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>
