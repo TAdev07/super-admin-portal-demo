@@ -2,8 +2,7 @@ import React from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 // import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL, silentAuthenticate } from '../../shared/auth';
+import { apiClient } from '../../shared/auth';
 
 interface LoginFormData {
   email: string;
@@ -18,13 +17,12 @@ const Login: React.FC = () => {
   const handleLogin = async (values: LoginFormData) => {
     setLoading(true);
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/login`,
+      const response = await apiClient.post(
+        '/auth/login',
         {
           email: values.email,
           password: values.password,
-        },
-        { withCredentials: true }
+        }
       );
 
       const { access_token, user } = response.data;
@@ -35,9 +33,8 @@ const Login: React.FC = () => {
 
       // Fetch enriched profile to populate roles/permissions immediately
       try {
-        const profile = await axios.get(`${API_BASE_URL}/users/me`, {
+        const profile = await apiClient.get('/users/me', {
           headers: { Authorization: `Bearer ${access_token}` },
-          withCredentials: true,
         });
         localStorage.setItem('user_profile', JSON.stringify(profile.data));
       } catch (e) {
@@ -47,14 +44,8 @@ const Login: React.FC = () => {
 
       message.success('Đăng nhập thành công!');
 
-      // Đồng bộ giống frontend Next: chạy silent SSO để ổn định user_profile
-      try {
-        await silentAuthenticate();
-      } catch (e) {
-        console.warn('silentAuthenticate after login failed:', e);
-      }
-
       // Chuyển hướng về trang chủ bằng hard redirect để tránh Protected bounce
+      // Không cần gọi silentAuthenticate vì đã có token và profile rồi
       window.location.replace('/');
     } catch (error: unknown) {
       console.error('Login error:', error);

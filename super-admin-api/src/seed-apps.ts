@@ -48,23 +48,18 @@ async function seedApps() {
       name: 'shell-mf-host',
       url: 'http://localhost:3000',
       origin: 'http://localhost:3000',
-      icon: 'desktop',
-      allowedScopes: ['read:demo', 'read:users', 'read:apps'],
+      allowedScopes: ['profile', 'email'],
     },
     {
-      name: 'mini_portal_mf',
+      name: 'mini-portal-mf',
       url: 'http://localhost:5174',
       origin: 'http://localhost:5174',
-      icon: 'appstore',
-      allowedScopes: ['read:demo'],
+      allowedScopes: ['read:demo', 'write:demo'],
+      remoteEntry: '/bundles/mini-portal-mf/remoteEntry.js',
     },
   ];
 
-  for (const appData of sampleApps) {
-    const app = appRepository.create(appData);
-    await appRepository.save(app);
-    console.log(`Created app: ${app.name}`);
-  }
+  await appRepository.save(sampleApps);
 
   console.log('Seed completed!');
   await dataSource.destroy();

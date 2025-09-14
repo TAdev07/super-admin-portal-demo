@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "clean": "rm -rf dist bundle.zip",
     "build": "tsc -b && vite build",
+    "bundle": "npm run clean && npm run build && cd dist && zip -r ../bundle.zip . && cd ..",
     "preview": "vite preview",
     "type-check": "tsc -b --pretty"
   },

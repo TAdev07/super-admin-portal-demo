@@ -7,9 +7,7 @@ export default defineConfig({
     react(),
     federation({
       name: 'super_admin_shell',
-      remotes: {
-        'mini_portal_mf': 'http://localhost:5174/assets/remoteEntry.js',
-      },
+      remotes: {},
       shared: ['react', 'react-dom']
     })
   ],

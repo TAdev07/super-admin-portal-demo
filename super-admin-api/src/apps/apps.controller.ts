@@ -8,7 +8,10 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AppsService } from './apps.service';
 import { CreateAppDto } from './dto/create-app.dto';
 import { UpdateAppDto } from './dto/update-app.dto';
@@ -45,5 +48,24 @@ export class AppsController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.appsService.remove(id);
+  }
+
+  @Post('with-bundle')
+  @UseInterceptors(FileInterceptor('bundle'))
+  createWithBundle(
+    @Body() createAppDto: CreateAppDto,
+    @UploadedFile() bundle?: Express.Multer.File,
+  ) {
+    return this.appsService.createWithBundle(createAppDto, bundle);
+  }
+
+  @Patch(':id/with-bundle')
+  @UseInterceptors(FileInterceptor('bundle'))
+  updateWithBundle(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateAppDto: UpdateAppDto,
+    @UploadedFile() bundle?: Express.Multer.File,
+  ) {
+    return this.appsService.updateWithBundle(id, updateAppDto, bundle);
   }
 }

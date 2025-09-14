@@ -12,8 +12,7 @@ export default defineConfig({
         './Widget': './src/Widget.tsx',
         './App': './src/App.tsx'
       },
-  // Use shorthand to avoid TS type mismatch; host provides React singletons
-  shared: ['react', 'react-dom']
+      shared: ['react', 'react-dom', 'react/jsx-runtime']
     })
   ],
   server: {

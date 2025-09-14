@@ -3,12 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AppsModule } from './apps/apps.module';
-import { AuthModule } from './auth/auth.module';
-import { AuditLog } from './audit/entities/audit-log.entity';
-import { AuditService } from './audit/audit.service';
-import { AuditController } from './audit/audit.controller';
+// import { AuditModule } from './audit/audit.module';
+import { BundlesModule } from './bundles/bundles.module';
+import { App } from './apps/entities/app.entity';
 
 @Module({
   imports: [
@@ -22,12 +22,13 @@ import { AuditController } from './audit/audit.controller';
       synchronize: true, // Set to false in production
       logging: true,
     }),
-    TypeOrmModule.forFeature([AuditLog]),
+    AuthModule,
     UsersModule,
     AppsModule,
-    AuthModule,
+    // AuditModule,
+    BundlesModule,
   ],
-  controllers: [AppController, AuditController],
-  providers: [AppService, AuditService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

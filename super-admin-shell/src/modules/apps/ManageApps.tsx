@@ -10,46 +10,59 @@ import {
   // message,
   Popconfirm,
   Tag,
-  Typography
+  Typography,
+  Upload
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   LinkOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../../context/AppContext';
 import type { ColumnsType } from 'antd/es/table';
 import type { AppItem } from '../../context/AppContext';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 const { Title } = Typography;
 
 interface AppFormData {
   name: string;
-  url: string;
+  code: string;
   icon?: string;
+  bundleFile?: File;
 }
 
 export default function ManageApps() {
-  const { apps, loading, createApp, updateApp, deleteApp } = useAppStore();
+  const { apps, loading, createApp, updateApp, deleteApp, uploadBundle } = useAppStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingApp, setEditingApp] = useState<AppItem | null>(null);
+  const [uploadingApp, setUploadingApp] = useState<AppItem | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
-
-
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [formFileList, setFormFileList] = useState<File[]>([]);
 
   const handleCreate = () => {
     setEditingApp(null);
     form.resetFields();
+    setFormFileList([]);
     setIsModalVisible(true);
   };
 
   const handleEdit = (app: AppItem) => {
     setEditingApp(app);
     form.setFieldsValue(app);
+    setFormFileList([]);
     setIsModalVisible(true);
+  };
+
+  const handleUpload = (app: AppItem) => {
+    setUploadingApp(app);
+    setIsUploadModalVisible(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -59,16 +72,44 @@ export default function ManageApps() {
   const handleSubmit = async (values: AppFormData) => {
     setSubmitLoading(true);
     try {
+      // Prepare data with bundle file if exists
+      const appData = {
+        name: values.name,
+        code: values.code,
+        icon: values.icon,
+        bundleFile: formFileList.length > 0 ? formFileList[0] : undefined,
+      };
+
       if (editingApp) {
-        await updateApp(editingApp.id, values);
+        await updateApp(editingApp.id, appData);
       } else {
-        await createApp(values);
+        await createApp(appData);
       }
+
       setIsModalVisible(false);
       form.resetFields();
+      setFormFileList([]);
       setEditingApp(null);
     } catch (error) {
       console.error('Error submitting form:', error);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadingApp || fileList.length === 0 || !fileList[0].originFileObj) {
+      // You can add a message here to inform the user
+      return;
+    }
+    setSubmitLoading(true);
+    try {
+      await uploadBundle(uploadingApp.code, fileList[0].originFileObj);
+      setIsUploadModalVisible(false);
+      setFileList([]);
+      setUploadingApp(null);
+    } catch (error) {
+      console.error('Error uploading bundle:', error);
     } finally {
       setSubmitLoading(false);
     }
@@ -95,21 +136,35 @@ export default function ManageApps() {
       ),
     },
     {
-      title: 'URL',
-      dataIndex: 'url',
-      key: 'url',
-      render: (url: string) => (
-        <div style={{ wordBreak: 'break-all' }}>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#52c41a' }}
-          >
-            <LinkOutlined style={{ marginRight: 4 }} />
-            {url}
-          </a>
+      title: 'Code',
+      dataIndex: 'code',
+      key: 'code',
+      render: (code: string) => (
+        <div style={{ fontFamily: 'monospace', background: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>
+          {code}
         </div>
+      ),
+    },
+    {
+      title: 'Bundle',
+      dataIndex: 'remoteEntry',
+      key: 'remoteEntry',
+      render: (remoteEntry: string, record: AppItem) => (
+        <Space>
+          {remoteEntry ? (
+            <Tag color="blue">Module Federation</Tag>
+          ) : (
+            <Tag color="orange">Iframe App</Tag>
+          )}
+          <Button
+            icon={<UploadOutlined />}
+            size="small"
+            onClick={() => handleUpload(record)}
+            title={remoteEntry ? "Cập nhật bundle" : "Upload bundle để dùng Module Federation"}
+          >
+            {remoteEntry ? "Update" : "Upload"}
+          </Button>
+        </Space>
       ),
     },
     {
@@ -199,6 +254,7 @@ export default function ManageApps() {
         onCancel={() => {
           setIsModalVisible(false);
           form.resetFields();
+          setFormFileList([]);
           setEditingApp(null);
         }}
         footer={null}
@@ -221,14 +277,42 @@ export default function ManageApps() {
           </Form.Item>
 
           <Form.Item
-            label="URL"
-            name="url"
+            label="Code"
+            name="code"
             rules={[
-              { required: true, message: 'Vui lòng nhập URL!' },
-              { type: 'url', message: 'URL không hợp lệ!' }
+              { required: true, message: 'Vui lòng nhập code!' },
+              { pattern: /^[a-zA-Z0-9-_]+$/, message: 'Code chỉ chứa chữ, số, dấu gạch ngang và gạch dưới!' }
             ]}
           >
-            <Input placeholder="https://example.com" />
+            <Input placeholder="my-app-code" />
+          </Form.Item>
+
+          <Form.Item
+            label="Bundle File (tuỳ chọn)"
+            name="bundleFile"
+            help="Bundle sẽ được upload sau khi tạo app thành công"
+          >
+            <Upload.Dragger
+              name="bundleFile"
+              multiple={false}
+              fileList={formFileList as unknown as UploadFile[]}
+              beforeUpload={(file) => {
+                setFormFileList([file]);
+                return false; // Prevent auto-upload
+              }}
+              onRemove={() => {
+                setFormFileList([]);
+              }}
+              accept=".zip"
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined />
+              </p>
+              <p className="ant-upload-text">Nhấp hoặc kéo file bundle (.zip) vào đây</p>
+              <p className="ant-upload-hint">
+                File bundle cho Module Federation (remoteEntry.js)
+              </p>
+            </Upload.Dragger>
           </Form.Item>
 
           <Form.Item
@@ -255,6 +339,42 @@ export default function ManageApps() {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title={`Upload Bundle cho: ${uploadingApp?.name}`}
+        open={isUploadModalVisible}
+        onCancel={() => {
+          setIsUploadModalVisible(false);
+          setFileList([]);
+          setUploadingApp(null);
+        }}
+        onOk={handleUploadSubmit}
+        confirmLoading={submitLoading}
+        okText="Upload"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <Upload.Dragger
+          name="file"
+          multiple={false}
+          fileList={fileList}
+          beforeUpload={(file) => {
+            setFileList([file]);
+            return false; // Prevent auto-upload
+          }}
+          onRemove={() => {
+            setFileList([]);
+          }}
+        >
+          <p className="ant-upload-drag-icon">
+            <UploadOutlined />
+          </p>
+          <p className="ant-upload-text">Nhấp hoặc kéo tệp vào khu vực này để tải lên</p>
+          <p className="ant-upload-hint">
+            Chỉ hỗ trợ tải lên một tệp .zip.
+          </p>
+        </Upload.Dragger>
       </Modal>
     </div>
   );

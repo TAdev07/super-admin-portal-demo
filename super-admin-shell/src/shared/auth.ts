@@ -15,15 +15,25 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+let isRedirecting = false // Prevent redirect loop
+
 apiClient.interceptors.response.use(
   (res) => res,
   (error) => {
     const status = error.response?.status
     const url: string | undefined = error.config?.url
     const isSilent = url?.includes('/auth/silent')
-    if (status === 401 && !isSilent) {
+    const isLogin = url?.includes('/auth/login')
+
+    if (status === 401 && !isSilent && !isLogin && !isRedirecting) {
+      isRedirecting = true
       clearAuthData()
-      window.location.href = '/login'
+
+      // Add a small delay to prevent rapid redirect loops
+      setTimeout(() => {
+        window.location.href = '/login'
+        isRedirecting = false
+      }, 100)
     }
     return Promise.reject(error)
   }

@@ -2,9 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
-import { Request, Response, NextFunction } from 'express';
-import { AuditService } from './audit/audit.service';
-import { AuditInterceptor } from './audit/audit.interceptor';
+import {
+  Request,
+  Response,
+  NextFunction,
+  static as expressStatic,
+} from 'express';
+import * as path from 'path';
+// import { AuditService } from './audit/audit.service';
+// import { AuditInterceptor } from './audit/audit.interceptor';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -14,11 +20,19 @@ import { App } from './apps/entities/app.entity';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // CORS configuration
   app.enableCors({
-    origin: 'http://localhost:3000', // URL của frontend Next.js
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+    ],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-App-Name'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Add global prefix
@@ -41,17 +55,27 @@ async function bootstrap() {
     // ignore if repo not ready during first bootstrap
   }
 
-  const frameAndScript = ["'self'", ...appOrigins];
+  const frameAndScript = [
+    "'self'",
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    ...appOrigins,
+  ];
   app.use(
     helmet({
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
           'default-src': ["'self'"],
-          // Only allow scripts we host or approved app origins (no inline/eval)
+          // Allow scripts from self, localhost, and approved app origins
           'script-src': frameAndScript,
           'frame-src': frameAndScript,
-          'connect-src': ["'self'", ...appOrigins],
+          'connect-src': [
+            "'self'",
+            'http://localhost:3001',
+            'http://127.0.0.1:3001',
+            ...appOrigins,
+          ],
           'object-src': ["'none'"],
           'base-uri': ["'self'"],
           // Prevent other sites from iframing unless explicitly registered
@@ -60,9 +84,14 @@ async function bootstrap() {
           // 'upgrade-insecure-requests': [],
         },
       },
+      // Allow embedding/consumption of cross-origin static assets (e.g., /bundles/*)
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+
+  // NOTE: We intentionally set CORS/CORP headers BEFORE serving static bundles
+  // so that the responses include the necessary headers when fetched cross-origin.
 
   // Cookies
   app.use(cookieParser());
@@ -73,9 +102,42 @@ async function bootstrap() {
     corr.use(req, res, next),
   );
 
-  // Global audit interceptor
-  const audit = app.get(AuditService);
-  app.useGlobalInterceptors(new AuditInterceptor(audit));
+  // Global audit interceptor - TEMPORARILY DISABLED
+  // const audit = app.get(AuditService);
+  // app.useGlobalInterceptors(new AuditInterceptor(audit));
+
+  // Static file serving for bundles with CORS/CORP headers
+  app.use('/bundles', (req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = new Set([
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ]);
+    if (origin && allowedOrigins.has(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else {
+      // Fallback for simple non-credentialed requests
+      res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    }
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Not strictly needed for static files, but harmless
+    res.header('Access-Control-Allow-Credentials', 'true');
+    // Critical: allow cross-origin consumption of JS files
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+      return;
+    }
+    next();
+  });
+
+  // Serve static files from bundles
+  app.use(
+    '/bundles',
+    expressStatic(path.join(__dirname, '..', 'public', 'bundles')),
+  );
 
   // Enhanced naive in-memory rate limiter (per IP + per appName header) if @nestjs/throttler unavailable
   const rateWindowMs = 15 * 60 * 1000;

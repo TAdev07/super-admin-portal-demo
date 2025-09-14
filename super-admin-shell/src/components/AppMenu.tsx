@@ -11,7 +11,10 @@ export default function AppMenu({ collapsed }: { collapsed: boolean }) {
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     const app = apps.find((a) => a.id.toString() === key)
-    if (app) nav(`/app/${encodeURIComponent(app.name)}`)
+    if (app) {
+      // All apps now use Module Federation with code-based routing
+      nav(`/dynamic-app/${encodeURIComponent(app.code)}`)
+    }
   }
 
   const appMenuItems: MenuProps['items'] = apps.map((app) => ({
@@ -23,7 +26,7 @@ export default function AppMenu({ collapsed }: { collapsed: boolean }) {
         {!collapsed && <LinkOutlined style={{ fontSize: 12, opacity: 0.7, marginLeft: 'auto' }} />}
       </div>
     ),
-    title: collapsed ? `${app.name} - ${app.url}` : undefined,
+    title: collapsed ? `${app.name} - ${app.code}` : undefined,
   }))
 
   if (apps.length === 0 && !loading) {

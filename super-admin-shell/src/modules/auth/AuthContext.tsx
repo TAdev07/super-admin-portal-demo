@@ -28,18 +28,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [error, setError] = useState<string | undefined>()
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   const runSilent = useCallback(async () => {
     setLoading(true)
     setError(undefined)
-    const result = await silentAuthenticate({ trace: true })
-    if (result.success) {
-      setUser(result.profile as EnrichedUserProfile)
+    try {
+      const result = await silentAuthenticate({ trace: true })
+      if (result.success) {
+        setUser(result.profile as EnrichedUserProfile)
+      } else {
+        // If silent auth fails, clear stale data
+        const legacy = getUser()
+        if (!legacy) {
+          setUser(null)
+        }
+      }
+    } catch (err) {
+      console.warn('Silent auth failed:', err)
+      setError('Authentication failed')
+      // Don't clear user immediately on network errors
     }
     setLoading(false)
   }, [])
 
   useEffect(() => {
+    if (hasInitialized) return // Prevent multiple initializations
+
     const enriched = getUserProfile()
     if (enriched) {
       setUser(enriched)
@@ -47,15 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const legacy = getUser()
       if (legacy) setUser(legacy as unknown as EnrichedUserProfile)
     }
+
+    setHasInitialized(true)
     runSilent().finally(() => setInitializing(false))
-  }, [runSilent])
+  }, [runSilent, hasInitialized])
 
   const refresh = useCallback(async () => {
     await runSilent()
   }, [runSilent])
 
   const logout = useCallback(async () => {
-    try { await apiClient.post('/auth/logout') } catch {}
+    try {
+      await apiClient.post('/auth/logout')
+    } catch (error) {
+      console.warn('Logout API call failed:', error)
+    }
     clearAuthData()
     setUser(null)
   }, [])
