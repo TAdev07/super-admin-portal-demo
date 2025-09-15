@@ -135,9 +135,9 @@ const DynamicAppViewer: React.FC = () => {
       if (!appCode) return;
 
     try {
-  const { data: apps } = await apiClient.get<App[]>('/apps');
-  const targetApp = (apps as Array<App & { code?: string }>).find(app => app.code === appCode);
-  console.log('targetApp: ', targetApp);
+        const { data: apps } = await apiClient.get<App[]>('/apps');
+        const targetApp = (apps as Array<App & { code?: string }>).find(app => app.code === appCode);
+        console.log('targetApp: ', targetApp);
 
         if (targetApp && targetApp.remoteEntry) {
           // Remove /api prefix and construct correct static file URL
