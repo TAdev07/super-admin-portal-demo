@@ -1,10 +1,10 @@
 # Super Admin Portal (Monorepo)
 
 Monorepo gồm các app:
-- super-admin-api (NestJS) — Auth, Users, Apps, Audit
+- super-admin-api (NestJS) — Auth, Users, Apps, Bundles, Audit
 - super-admin-shell (Vite React) — Shell UI, silent SSO, iframe host, optional MF host
 - mini-portal-demo (Vite React TS) — Mini app mẫu nhận token qua postMessage
-- mini-portal-mf (Vite React TS) — Remote demo cho Module Federation
+- mini-portal-mf (Vite React TS) — Remote demo cho Module Federation, có cơ chế đóng gói (bundle) để được host động bởi Shell.
 
 ## Quick Start (Dev)
 
@@ -21,6 +21,19 @@ Lưu ý: Dùng cùng host (localhost hoặc 127.0.0.1) nhất quán để cookie
 ## Hybrid Strategy
 - Legacy-first (Iframe + Token Bridge): cách mặc định cho app bên thứ ba, isolation tốt, cấp token app-scoped qua postMessage.
 - Greenfield (Module Federation): cho app mới/được tin cậy, tích hợp UI chặt chẽ. Shell có thể host remote qua vite-plugin-federation.
+
+## Đóng gói & Tải lên Micro-frontend (MF)
+
+Dự án `mini-portal-mf` là một ví dụ về cách một micro-frontend (remote) có thể được đóng gói và tích hợp vào `super-admin-shell`.
+
+1.  **Đóng gói:** Chạy lệnh `npm run bundle` trong thư mục `mini-portal-mf`. Lệnh này sẽ:
+    - Xóa thư mục `dist` và file `bundle.zip` cũ.
+    - Build project bằng Vite.
+    - Nén toàn bộ nội dung của thư mục `dist` thành file `bundle.zip`.
+
+2.  **Tải lên:** File `bundle.zip` này sau đó có thể được tải lên thông qua `super-admin-api` tại endpoint `POST /api/apps/with-bundle` hoặc `PATCH /api/apps/:id/with-bundle`. API sẽ giải nén và lưu trữ các file tĩnh này, cho phép `super-admin-shell` có thể tải và hiển thị remote component một cách động.
+
+Cơ chế này cho phép các micro-frontend được phát triển và triển khai độc lập mà không cần build lại Shell chính.
 
 ## Tài liệu
 - System Overview: `docs/system-overview.md`
